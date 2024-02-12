@@ -1,0 +1,57 @@
+
+# serverless.yml
+service: service-with-two-apis
+
+custom:
+  ALLOWED_ORIGINS:
+    - http://localhost:3000
+    - https://mywebsite.example.com
+
+provider:
+  # REST API configuration
+  apiGateway:
+    # Enable gzip compression for responses > 1 KB
+    minimumCompressionSize: 1024,
+
+  # HTTP API configuration
+  httpApi:
+    cors:
+      allowedOrigins: ${self:custom.ALLOWED_ORIGINS}
+      allowedHeaders: 
+        - Content-Type
+        - Origin
+        - Authorization
+      allowedMethods:
+        - GET
+        - POST
+        - PATCH
+        - DELETE
+        - PUT
+        - OPTIONS
+
+functions:
+  health:
+    handler: path/to/handler
+  events:
+   # Trigger via REST API
+    - http:
+        method: get
+        path: /actions/list
+        authorizer:
+      type: COGNITO_USER_POOLS
+      authorizerId: restApiAuthorizerId
+      cors: 
+        origins: ${self:custom.ALLOWED_ORIGINS}
+        headers:
+          - Content-Type
+          - Origin
+          - Authorization
+       allowCredentials: false
+       cacheControl: max-age=600, s-maxage=600, proxy-revalidate
+
+   # Trigger via HTTP API
+    - httpApi:
+        method: get
+        path: /actions/list
+        authorizer:
+          id: httpApiAuthorizerId
